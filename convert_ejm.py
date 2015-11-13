@@ -3,18 +3,30 @@
 # By Fedor Iskhakov
 # fedor.iskh.me
 
+# The packages:
+# geopy is needed for geo-locating the employers
+# bleach is needed for cleaning up the content of ads for Evernote standard (ENML)
+# https://dev.evernote.com/doc/articles/enml.php#prohibited
+# https://pypi.python.org/pypi/bleach
+# http://geopy.readthedocs.org/en/1.10.0/
+
 import sys
 import xml.etree.ElementTree as ET
 import geopy
 import datetime
 import calendar
+import bleach
+from xml.sax.saxutils import escape
 
 # SETUP:
 # The XML file made from Excel using xml_schema in Excel from downloaded XLS file from EJM
 # (see http://www.excel-easy.com/examples/xml.html for how to convert XLS to XML)
-ejm_xmlfile='../ejm/EJM_ads_2015-11-11_042334.xml'
+ejm_xmlfile='../ejm/EJM_ads_2015-11-12_081222.xml'
+# ejm_xmlfile='../ejm/test.xml'
 # The output file that will be imported into Evernote
-evernote_xmlfile='./ejm_2015-11-11_042334.enex'
+evernote_xmlfile='./ejm_2015-11-12_081222.enex'
+# evernote_xmlfile='./test.enex'
+
 
 print '''
  Python script that converts XML positions data downloaded from EJM/AIMS 
@@ -103,8 +115,8 @@ for position in intree.iter('position'):
 	ET.SubElement(note, "title").text = title+' at '+institution
 	# if 'full-time' in section.lower():
 	# 	ET.SubElement(note, "tag").text = 'Full-Time'
-	# # if 'academic' in section.lower() and 'nonacademic' not in section.lower():
-	# ET.SubElement(note, "tag").text = 'Academic'
+	if 'non-academic' in title.lower():
+		ET.SubElement(note, "tag").text = 'Non-Academic'
 	# if 'international' not in section.lower():
 	# 	ET.SubElement(note, "tag").text = 'USA'
 
@@ -114,19 +126,19 @@ for position in intree.iter('position'):
 	'<en-note style="word-wrap: break-word; -webkit-nbsp-mode: space; -webkit-line-break: after-white-space;">'
 	entry=entry+'<div style="margin-bottom:1em;"><a style="color:black" href="https://econjobmarket.org/Apply/PosApp.php?posid='+ejmid+'">EJM id '+ejmid+' (view online)</a></div>'
 	if position.find('Ad_title') is not None and position.find('Ad_title').text is not None:
-		entry=entry+'<h2>'+position.find('Ad_title').text+'</h2>'
-	entry=entry+'<div style="font-size:large;color:#00b300">'+title+'</div>'
-	entry=entry+'<div style="font-size:large;font-weight:bold;color:#c80000">'+institution+'</div>'
+		entry=entry+'<h2>'+escape(position.find('Ad_title').text)+'</h2>'
+	entry=entry+'<div style="font-size:large;color:#00b300">'+escape(title)+'</div>'
+	entry=entry+'<div style="font-size:large;font-weight:bold;color:#c80000">'+escape(institution)+'</div>'
 	if position.find('Department') is not None and position.find('Department').text is not None:
-		entry=entry+'<div style="font-size:norlam;font-weight:bold;color:#c80000">'+position.find('Department').text+'</div>'
+		entry=entry+'<div style="font-size:norlam;font-weight:bold;color:#c80000">'+escape(position.find('Department').text)+'</div>'
 
 	if geo is not None:
 		entry=entry+'<div><a style="font-size:large;font-weight:bold;color:#0000cc" href="https://www.google.com.au/maps/@'+str(geo.latitude)+','+str(geo.longitude)+',10z">'
 		if geo.address is not None:
-			entry=entry+geo.address
+			entry=entry+escape(geo.address)
 		else:
 			if len(country)>0:
-				entry=entry+country
+				entry=entry+escape(country)
 			else:
 				entry=entry+'location'
 		entry=entry+'</a></div>'
@@ -142,13 +154,18 @@ for position in intree.iter('position'):
 		entry=entry+'<div style="margin-top:1.5em;margin-bottom:0em;font-size:small">Fields:</div>'
 		entry=entry+'<ul>'
 		for k in fields:
-			entry=entry+'<li style="color:black">'+k+'</li>'
+			entry=entry+'<li style="color:black">'+escape(k)+'</li>'
 		entry=entry+'</ul>'
 
-	entry=entry+'<pre style="white-space:pre-wrap;word-wrap:break-word;">'+position.find('Ad_text').text+'</pre>'
+	#clean the ad text
+	allowed_tags=['a','abbr','acronym','address','area','b','bdo','big','blockquote','br','caption','center','cite','code','col','colgroup','dd','del','dfn','div','dl','dt','em','font','h1','h2','h3','h4','h5','h6','hr','i','img','ins','kbd','li','map','ol','p','pre','q','s','samp','small','span','strike','strong','sub','sup','table','tbody','td','tfoot','th','thead','title','tr','tt','u','ul','var','xmp']
+	allowed_attrib=['style','href']
+	allowed_styles=['font-size','font-weight','margin-bottom','margin-top','color','white-space','word-wrap']
+	ad_clean=bleach.clean(position.find('Ad_text').text,allowed_tags,allowed_attrib,allowed_styles, strip=True,strip_comments=True)
 
-	entry=entry + \
-	'</en-note>'
+	entry=entry+'<pre style="white-space:pre-wrap;word-wrap:break-word;">'+escape(ad_clean)+'</pre>'
+
+	entry=entry + '</en-note>'
 
 	contenttag=ET.SubElement(note, "content")
 	ET.SubElement(contenttag, "![CDATA[").text=entry

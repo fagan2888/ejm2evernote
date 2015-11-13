@@ -3,11 +3,20 @@
 # By Fedor Iskhakov
 # fedor.iskh.me
 
+# The packages:
+# geopy is needed for geo-locating the employers
+# bleach is needed for cleaning up the content of ads for Evernote standard (ENML)
+# https://dev.evernote.com/doc/articles/enml.php#prohibited
+# https://pypi.python.org/pypi/bleach
+# http://geopy.readthedocs.org/en/1.10.0/
+
 import sys
 import xml.etree.ElementTree as ET
 import geopy
 import datetime
 import calendar
+import bleach
+from xml.sax.saxutils import escape
 
 # SETUP:
 # The XML file downloaded from JOE
@@ -134,27 +143,27 @@ for position in intree.iter('position'):
 	entry=entry+'<div style="margin-bottom:1em;"><a style="color:black" href="https://www.aeaweb.org/joe/listing.php?JOE_ID='+joeid+'">JOE id '+joeid+' (view online)</a></div>'
 	entry=entry+'<div style="font-size:small;">' + section + '</div>'
 	entry=entry+'<div style="font-size:large;color:#00b300">'+position.find('jp_title').text+'</div>'
-	entry=entry+'<div style="font-size:large;font-weight:bold;color:#c80000">'+institution+'</div>'
+	entry=entry+'<div style="font-size:large;font-weight:bold;color:#c80000">'+escape(institution)+'</div>'
 	if position.find('jp_division') is not None and position.find('jp_division').text is not None:
-		entry=entry+'<div style="font-size:norlam;font-weight:bold;color:#c80000">'+position.find('jp_division').text+'</div>'
+		entry=entry+'<div style="font-size:norlam;font-weight:bold;color:#c80000">'+escape(position.find('jp_division').text)+'</div>'
 	if position.find('jp_department') is not None and position.find('jp_department').text is not None:
-		entry=entry+'<div style="font-size:norlam;font-weight:bold;color:#c80000">'+position.find('jp_department').text+'</div>'
+		entry=entry+'<div style="font-size:norlam;font-weight:bold;color:#c80000">'+escape(position.find('jp_department').text)+'</div>'
 
 	if geo is not None:
 		entry=entry+'<div><a style="font-size:large;font-weight:bold;color:#0000cc" href="https://www.google.com.au/maps/@'+str(geo.latitude)+','+str(geo.longitude)+',10z">'
 		check=False
 		if len(city)>0:
-			entry=entry+city
+			entry=entry+escape(city)
 			check=True
 		if len(state)>0:
 			if check:
 				entry=entry+', '
-			entry=entry+state
+			entry=entry+escape(state)
 			check=True
 		if len(country)>0:
 			if check:
 				entry=entry+', '
-			entry=entry+country
+			entry=entry+escape(country)
 		entry=entry+'</a></div>'
 	
 	if position.find('jp_application_deadline') is not None and position.find('jp_application_deadline').text is not None:
@@ -165,17 +174,24 @@ for position in intree.iter('position'):
 		entry=entry+'<div style="margin-top:1.5em;margin-bottom:0em;font-size:small">Research fields:</div>'
 		entry=entry+'<ul>'
 		for k in jel_codes:
-			entry=entry+'<li style="color:black">'+k.text+'</li>'
+			entry=entry+'<li style="color:black">'+escape(k.text)+'</li>'
 		entry=entry+'</ul>'
 
 	if keywords is not None:
 		entry=entry+'<div style="margin-top:1.5em;margin-bottom:0em;font-size:small">Keywords:</div>'
 		entry=entry+'<ul>'
 		for k in keywords:
-			entry=entry+'<li style="color:black">'+k+'</li>'
+			entry=entry+'<li style="color:black">'+escape(k)+'</li>'
 		entry=entry+'</ul>'
 
-	entry=entry+'<pre style="white-space:pre-wrap;word-wrap:break-word;">'+position.find('jp_full_text').text+'</pre>'
+
+	#clean the ad text
+	allowed_tags=['a','abbr','acronym','address','area','b','bdo','big','blockquote','br','caption','center','cite','code','col','colgroup','dd','del','dfn','div','dl','dt','em','font','h1','h2','h3','h4','h5','h6','hr','i','img','ins','kbd','li','map','ol','p','pre','q','s','samp','small','span','strike','strong','sub','sup','table','tbody','td','tfoot','th','thead','title','tr','tt','u','ul','var','xmp']
+	allowed_attrib=['style','href']
+	allowed_styles=['font-size','font-weight','margin-bottom','margin-top','color','white-space','word-wrap']
+	ad_clean=bleach.clean(position.find('jp_full_text').text,allowed_tags,allowed_attrib,allowed_styles, strip=True,strip_comments=True)
+
+	entry=entry+'<pre style="white-space:pre-wrap;word-wrap:break-word;">'+escape(ad_clean)+'</pre>'
 
 	entry=entry + \
 	'</en-note>'
