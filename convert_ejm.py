@@ -19,8 +19,7 @@ import bleach
 from xml.sax.saxutils import escape
 
 # SETUP:
-# The XML file made from Excel using xml_schema in Excel from downloaded XLS file from EJM
-# (see http://www.excel-easy.com/examples/xml.html for how to convert XLS to XML)
+# The XML file from EJM/AIMS
 ejm_xmlfile='../ejm/EJM_ads_2015-11-12_081222.xml'
 # ejm_xmlfile='../ejm/test.xml'
 # The output file that will be imported into Evernote
