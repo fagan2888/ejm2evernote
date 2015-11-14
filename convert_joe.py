@@ -20,9 +20,9 @@ from xml.sax.saxutils import escape
 
 # SETUP:
 # The XML file downloaded from JOE
-joe_xmlfile='../joe/all_nov10/joe_full_xml.xml'
+joe_xmlfile='<PATH>'
 # The output file that will be imported into Evernote
-evernote_xmlfile='./joe_nov10.enex'
+evernote_xmlfile='<PATH>'
 
 print '''
  Python script that converts XML positions data downloaded from JOE (joe_full_xml.xml)

@@ -20,16 +20,13 @@ from xml.sax.saxutils import escape
 
 # SETUP:
 # The XML file from EJM/AIMS
-ejm_xmlfile='../ejm/EJM_ads_2015-11-12_081222.xml'
-# ejm_xmlfile='../ejm/test.xml'
+ejm_xmlfile='<PATH>'
 # The output file that will be imported into Evernote
-evernote_xmlfile='./ejm_2015-11-12_081222.enex'
-# evernote_xmlfile='./test.enex'
+evernote_xmlfile='<PATH>'
 
 
 print '''
  Python script that converts XML positions data downloaded from EJM/AIMS 
- as xls and converted to XML in Windows Excel
  to ENEX format XML that can be imported into Evernote.
  '''
 
